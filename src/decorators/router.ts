@@ -87,7 +87,6 @@ const throwValidationErrors = (
   type: ErrorDataType,
   errors: Pick<ValidationError, 'property' | 'message'>[]
 ) => {
-  console.log(errors);
   ctx.throw(
     412,
     `${type} validation error: ${errors
