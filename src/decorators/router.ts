@@ -141,15 +141,38 @@ const validateClass = (Type: new () => any, type: ErrorDataType) => (
     } catch (err) {
       if (Array.isArray(err)) {
         const errors = err as ClassValidationError[];
+
+        const firstNestedChildError = (
+          e: ClassValidationError,
+          property: string | undefined = undefined
+        ) => {
+          const targetProperty =
+            ((property && property + '.') || '') + e.property;
+          let target = e;
+          if (e.children && e.children[0]) {
+            target = firstNestedChildError(e.children[0], targetProperty);
+          } else {
+            target.property = targetProperty.replace(/\.0/gm, '[]');
+          }
+
+          return target;
+        };
+
         throwValidationErrors(
           ctx,
           type,
           errors.map(e => {
+            const childError =
+              (e.children && e.children[0] && firstNestedChildError(e)) ||
+              undefined;
+
+            const targetError = childError || e;
+
             return {
-              property: type,
+              property: (childError && childError.property) || type,
               message:
-                (!e.value && `requires property \"${e.property}\"`) ||
-                Object.values(e.constraints)[0],
+                (!e.value && `requires property \"${targetError.property}\"`) ||
+                Object.values(targetError.constraints)[0],
             };
           })
         );
